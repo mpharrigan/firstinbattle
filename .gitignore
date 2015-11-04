@@ -1,1 +1,4 @@
 includes/constants.php
+pma/*
+web.config
+chatlog.html

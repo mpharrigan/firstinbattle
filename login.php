@@ -28,21 +28,21 @@ if($_POST && !empty($_POST['username']) && !empty($_POST['password'])) {
 
 	</head>
 
-	<body>
+	<body id="loginBody">
 	
 		<div id="login">
 			<form method="post" action="">
-				<div class="body"></div>
-				<div class="grad"></div>
-				<div class="header">
+				<div id="loginContainer"></div>
+				<div id="loginGrad"></div>
+				<div id="loginHeader">
 					<div>Let's<span>Play</span></div>
 				</div>
 				<br>
-				<div class="login">
+				<div id="loginBoxes">
 					<input type="text" placeholder="username" name="username" /><br>
 					<input type="password" placeholder="password" name="password" /><br>
 					<input type="submit" id="submit" value="Login" name="submit" /><br>
-					<?php if(isset($response)) echo "<h4>" . $response . "</h4>"; ?>
+					<?php if(isset($response)) echo "<h4 id=\"loginFail\">" . $response . "</h4>"; ?>
 				</div>
 			</form>
 		</div>

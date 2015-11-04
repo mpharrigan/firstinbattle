@@ -1,17 +1,16 @@
 @import url(//fonts.googleapis.com/css?family=Exo:100,200,400);
 @import url(//fonts.googleapis.com/css?family=Source+Sans+Pro:700,400,300);
 
-body{
+#loginBody{
 	margin: 0;
 	padding: 0;
 	background: #fff;
-
 	color: #fff;
 	font-family: Arial;
 	font-size: 12px;
 }
 
-.body{
+#loginContainer{
 	position: absolute;
 	top: 0px;
 	left: 0px;
@@ -24,7 +23,7 @@ body{
 	z-index: 0;
 }
 
-.grad{
+#loginGrad{
 	position: absolute;
 	top: 0px;
 	left: 0px;
@@ -37,14 +36,14 @@ body{
 	opacity: 0.7;
 }
 
-.header{
+#loginHeader{
 	position: absolute;
 	top: calc(50% - 35px);
 	left: calc(50% - 255px);
 	z-index: 2;
 }
 
-.header div{
+#loginHeader div{
 	float: left;
 	color: #fff;
 	font-family: 'Exo', sans-serif;
@@ -52,11 +51,11 @@ body{
 	font-weight: 200;
 }
 
-.header div span{
+#loginHeader div span{
 	color: #5379fa !important;
 }
 
-.login{
+#loginBoxes{
 	position: absolute;
 	top: calc(50% - 75px);
 	left: calc(50% - 50px);
@@ -66,7 +65,7 @@ body{
 	z-index: 2;
 }
 
-.login input[type=text]{
+#loginBoxes input[type=text]{
 	width: 250px;
 	height: 30px;
 	background: transparent;
@@ -79,7 +78,7 @@ body{
 	padding: 4px;
 }
 
-.login input[type=password]{
+#loginBoxes input[type=password]{
 	width: 250px;
 	height: 30px;
 	background: transparent;
@@ -93,7 +92,7 @@ body{
 	margin-top: 10px;
 }
 
-.login input[type=submit]{
+#loginBoxes input[type=submit]{
 	width: 260px;
 	height: 35px;
 	background: #fff;
@@ -108,25 +107,25 @@ body{
 	margin-top: 10px;
 }
 
-.login input[type=submit]:hover{
+#loginBoxes input[type=submit]:hover{
 	opacity: 0.8;
 }
 
-.login input[type=submit]:active{
+#loginBoxes input[type=submit]:active{
 	opacity: 0.6;
 }
 
-.login input[type=text]:focus{
+#loginBoxes input[type=text]:focus{
 	outline: none;
 	border: 1px solid rgba(255,255,255,0.9);
 }
 
-.login input[type=password]:focus{
+#loginBoxes input[type=password]:focus{
 	outline: none;
 	border: 1px solid rgba(255,255,255,0.9);
 }
 
-.login input[type=submit]:focus{
+#loginBoxes input[type=submit]:focus{
 	outline: none;
 }
 
@@ -138,10 +137,149 @@ body{
    color: rgba(255,255,255,0.6);
 }
 
-h4 {
+#loginFail {
 	font-family: 'Exo', sans-serif;
 	font-size: 16px;
 	font-weight: 400;
 	padding: 6px;
 	margin-top: 10px;
+}
+
+#indexLeftColumn {
+	position:fixed;
+	float:left;
+	background-color:#bac9fd;
+	left:0;
+	top:0;
+	width:35%;
+	bottom:0;
+	border-style:solid;
+	border-width:2px;
+}
+
+#indexRightColumn {
+	position:fixed;
+	float:right;
+	background-color:#fff;
+	right:0;
+	top:0;
+	width:65%;
+	bottom:0;
+	border-style:solid;
+	border-width:2px;
+}
+
+.indexHeaderBar {
+	position:static;
+	margin-top:5px;
+	height:35px;
+	width:100%;
+	border-bottom-style:solid;
+	border-bottom-width:2px;
+}
+
+#indexOpenGamesHeader {
+	position:absolute;
+	text-align:center;
+	font-family:"Trebuchet MS", Helvetica, sans-serif;
+}
+
+#indexOpenGamesJoinText {
+	position:absolute;
+	text-align:center;
+	line-height:100vh;
+	white-space:nowrap;
+	width:100%;
+}
+
+#indexNameMessage {
+	position:absolute;
+	font-family:"Trebuchet MS", Helvetica, sans-serif;
+	padding-top:6px;
+	padding-left:10px;
+}
+
+#indexChangePassword {
+	position:relative;
+	float:right;
+	margin-right:20px;
+	font-family:"Trebuchet MS", Helvetica, sans-serif;
+	padding-top:6px;
+}
+
+#indexGameMaker {
+	position:relative;
+	float:right;
+	margin-right:20px;
+	font-family:"Trebuchet MS", Helvetica, sans-serif;
+	padding-top:6px;
+}
+
+#indexLogout {
+	position:relative;
+	float:right;
+	font-family:"Trebuchet MS", Helvetica, sans-serif;
+	padding-top:6px;
+	margin-right:10px;
+}
+
+#loginWrapper {
+	position:absolute;
+	padding-bottom:25px;
+	background:#EBF4FB;
+	border:1px solid #ACD8F0;
+	text-align:center;
+	padding-left:35px;
+	padding-right:35px;
+	margin-top:37px;
+	right:0;
+	bottom:0;
+	top:5px;
+	left:0;
+}
+
+#loginChatbox {
+	position:absolute;
+	bottom:50px;
+	top:25px;
+	left:25px;
+	right:25px;
+	text-align:left;
+	padding:10px;
+	background:#fff;
+	border:1px solid #ACD8F0;
+	overflow:auto;
+}
+
+#loginUserMsg {
+	width:100%;
+	border:1px solid #ACD8F0;
+	font:12px arial;
+}
+
+#loginTextWrapper {
+	position:absolute;
+	bottom:16px;
+	right:100px;
+	left:37px;
+}
+
+#loginSubmitMsg {
+	position:absolute;
+	bottom:16px;
+	right:37px;
+	font:12px arial;
+}
+
+#loginMenu {
+	padding:12.5px 25px 12.5px 25px;
+}
+
+.indexMsgLn {
+	margin:0 0 2px 0;
+}
+
+#indexForm {
+	margin:0;
+	padding:0;
 }

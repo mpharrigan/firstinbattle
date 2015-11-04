@@ -4,7 +4,7 @@ if(isset($_SESSION['username'])){
     $text = $_POST['text'];
      
     $fp = fopen("chatlog.html", 'a');
-    fwrite($fp, "<div class='msgln'>(".date("g:i A").") <b>".$_SESSION['username']."</b>: ".stripslashes(htmlspecialchars($text))."<br></div>");
+    fwrite($fp, "<div class='indexMsgLn'>(".date("g:i A").") <b>".$_SESSION['username']."</b>: ".stripslashes(htmlspecialchars($text))."<br></div>");
     fclose($fp);
 }
 ?>
