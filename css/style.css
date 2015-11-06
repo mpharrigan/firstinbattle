@@ -1,5 +1,4 @@
 @import url(//fonts.googleapis.com/css?family=Exo:100,200,400);
-@import url(//fonts.googleapis.com/css?family=Source+Sans+Pro:700,400,300);
 
 #loginBody{
 	margin: 0;
@@ -20,6 +19,7 @@
 	height: auto;
 	background-image: url(../images/background.png);
 	background-size: cover;
+	background-position:center;
 	z-index: 0;
 }
 
@@ -37,37 +37,36 @@
 }
 
 #loginHeader{
-	position: absolute;
-	top: calc(50% - 35px);
-	left: calc(50% - 255px);
 	z-index: 2;
-}
-
-#loginHeader div{
-	float: left;
+	text-align:center;
 	color: #fff;
 	font-family: 'Exo', sans-serif;
 	font-size: 35px;
 	font-weight: 200;
+	padding-top:40px;
 }
 
-#loginHeader div span{
+#login-header-span{
 	color: #5379fa !important;
 }
 
+.vertical-centering{
+  min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+  min-height: 100vh; /* These two lines are counted as one :-)       */
+
+  display: flex;
+  align-items: center;
+}
+
 #loginBoxes{
-	position: absolute;
-	top: calc(50% - 75px);
-	left: calc(50% - 50px);
-	height: 150px;
-	width: 350px;
+	text-align:center;
 	padding: 10px;
 	z-index: 2;
 }
 
 #loginBoxes input[type=text]{
-	width: 250px;
-	height: 30px;
+	width: 260px;
+	height: 40px;
 	background: transparent;
 	border: 1px solid rgba(255,255,255,0.6);
 	border-radius: 2px;
@@ -79,8 +78,8 @@
 }
 
 #loginBoxes input[type=password]{
-	width: 250px;
-	height: 30px;
+	width: 260px;
+	height: 40px;
 	background: transparent;
 	border: 1px solid rgba(255,255,255,0.6);
 	border-radius: 2px;

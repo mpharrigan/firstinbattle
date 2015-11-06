@@ -19,7 +19,7 @@ $membership->confirm_Member();
 		<link rel="stylesheet" type="text/css" href="css/style.css" />
 		
 		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
-		<script type="text/javascript" src="javascript/index.js"></script>
+		<script type="text/javascript" src="js/index.js"></script>
 	
 	</head>
 

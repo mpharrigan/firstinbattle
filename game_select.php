@@ -18,7 +18,7 @@ if (isset($_POST['games'])) {
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		
 		<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
-		<script type="text/javascript" src="javascript/game_select.js"></script>
+		<script type="text/javascript" src="js/game_select.js"></script>
 		<script>
 
 	</head>
