@@ -1,0 +1,29 @@
+<h1>Go fish</h1>
+
+<h2>User info</h2>
+<form novalidate class="simple-form">
+    <input type="text" ng-model="user.name"/><br/>
+    <input type="submit" ng-click="new_game(user)" value="New/Join Game"/>
+</form>
+
+<p>I am {{user.name}} and I have {{user.cards.length}} cards.</p>
+
+<h2>Request Card</h2>
+<form novalidate class="simple-form">
+    <input type="text" ng-model="req_from.name"/><br>
+    <input type="number" ng-model="req_card.number"/><br/>
+    <input type="text" ng-model="req_card.suit"/><br/>
+    <input type="submit" ng-click="request_card()" value="Request"/>
+</form>
+
+<h2>{{status}}</h2>
+
+<h2>Cards</h2>
+<ul>
+    <li ng-repeat="card in user.cards">{{card.number}}, {{card.suit}}</li>
+</ul>
+
+<h2>Players</h2>
+<ul>
+    <li ng-repeat="player in players">{{player.name}}</li>
+</ul>
