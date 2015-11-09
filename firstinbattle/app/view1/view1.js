@@ -44,6 +44,12 @@ angular.module('fibApp.view1', ['ngRoute'])
                         }
                     });
                     break;
+                case "card_lost":
+                    $scope.$apply(function () {
+                        $scope.status = "You lost a card!";
+                        $scope.user.cards = data.cards;
+                    });
+                    break;
                 default:
                     console.log("Unknown message " + data.message)
             }
