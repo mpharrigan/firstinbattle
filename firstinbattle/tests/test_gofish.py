@@ -1,10 +1,11 @@
 from tornado.testing import gen_test, AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
-
 from firstinbattle.gofish import js
 from firstinbattle.main import FIBApplication
 
 FIBApplication().listen(7778)
+
+import random
 
 
 class TestGoFish(AsyncHTTPTestCase):
@@ -64,7 +65,7 @@ class TestGoFish(AsyncHTTPTestCase):
             self.assertEqual(set(plyr.keys()), {'name'})
 
     @gen_test
-    def test_get_card(self):
+    def test_steal_card(self):
         ws1 = yield websocket_connect(
             "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
             io_loop=self.io_loop)
@@ -115,3 +116,56 @@ class TestGoFish(AsyncHTTPTestCase):
         self.assertEqual(cl2['card'], desired_card)
         self.assertEqual(len(cl2['cards']), 6)
         self.assertNotIn(desired_card, cl2['cards'])
+
+    @gen_test
+    def test_fish_card(self):
+        ws1 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+        ws2 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+
+        ws1.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p1'}
+        }))
+        _ = yield ws1.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+
+        ws2.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p2'}
+        }))
+        pr2 = yield ws2.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+        _ = yield ws2.read_message()  # return_players
+
+        # Find which card we're going to steal
+        pr2 = js.loads(pr2)
+        self.assertEqual(pr2['message'], 'player_registered')
+        pr2_cards = pr2['cards']
+
+        # Pick a card that p2 doesn't have
+        while True:
+            desired_card = {'number': random.randint(0, 13), 'suit': 'heart'}
+            if desired_card not in pr2_cards:
+                break
+
+        # Ask for it
+        ws1.write_message(js.encode({
+            'message': 'request_card',
+            'card': desired_card,
+            'from': {'name': 'p2'}
+        }))
+        cr1 = yield ws1.read_message()
+        cr1 = js.loads(cr1)
+
+        # Make sure we stole successfully
+        self.assertEqual(cr1['message'], 'receive_card')
+        self.assertFalse(cr1['success'])
+        self.assertEqual(len(cr1['cards']), 8)
+        self.assertNotIn(cr1['card'], pr2_cards)
+
+        # p2 should not be informed of his loss
+        # cl2 = yield ws2.read_message()

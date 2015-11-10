@@ -191,6 +191,8 @@ class GoFishWs(WebSocketHandler):
             - card : Card
             - success : bool
                 True if from player, go fish otherwise
+            - cards : list of Card
+                Your current hand
         """
         other_player = self.game.get_player(data['from']['name'])
         card = Card(**data['card'])
