@@ -40,6 +40,8 @@ if($_POST && !empty($_POST['username']) && !empty($_POST['password'])) {
 	</head>
 
 	<body id="loginBody">
+		<?php if(isset($response)) echo "<div class=\"alert alert-warning\" id=\"loginFail\" role=\"alert\">" . $response . "</div>"; ?>
+		<div>
 			<form method="post" action="">
 				<div id="loginContainer"></div>
 				<div id="loginGrad"></div>
@@ -52,13 +54,13 @@ if($_POST && !empty($_POST['username']) && !empty($_POST['password'])) {
 								<input type="text" placeholder="username" name="username" class="login-textbox" /><br>
 								<input type="password" placeholder="password" name="password" class="login-textbox" /><br>
 								<input type="submit" id="submit" value="Login" name="submit" /><br>
-								<?php if(isset($response)) echo "<h4 id=\"loginFail\">" . $response . "</h4>"; ?>
 							</div>
 							<div class="col-md-1 "></div><div class="col-md-1 "></div><div class="col-md-1 "></div>
 						</div>
 					</div>
 				</div>
 			</form>
+		</div>		
 		
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>

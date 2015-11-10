@@ -137,11 +137,13 @@
 }
 
 #loginFail {
+	position:absolute;
 	font-family: 'Exo', sans-serif;
 	font-size: 16px;
 	font-weight: 400;
-	padding: 6px;
-	margin-top: 10px;
+	width:100%;
+	z-index:2;
+	text-align:center;
 }
 
 #indexLeftColumn {
