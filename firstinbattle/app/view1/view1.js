@@ -10,14 +10,22 @@ angular.module('fibApp.view1', ['ngRoute'])
     }])
 
     .controller('View1Ctrl', ['$scope', '$http', function ($scope, $http) {
-        $scope.user = {name: 'notset', cards: []};
-        $scope.req_card = {
-            number: 12,
-            suit: "hearts"
+        // TODO: Request this from server
+        $scope.game_info = {
+            card_info: {
+                suits: ['heart', 'spade', 'club', 'diamond'],
+                numbers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            }
         };
-        $scope.req_from = {name: 'notset'};
+        $scope.user = {name: 'player name', cards: []};
+        $scope.req_card = {
+            number: 11,
+            suit: "heart"
+        };
+        $scope.req_from = {name: ""};
         $scope.players = [];
         $scope.status = "Nothing happened yet";
+        $scope.is_turn = false;
         var ws = new WebSocket("ws://localhost:7777/gofish-ws");
 
         ws.onmessage = function (evt) {
@@ -28,6 +36,9 @@ angular.module('fibApp.view1', ['ngRoute'])
                         $scope.user.cards = data.cards;
                     });
                     console.log("User was registered " + data.cards);
+                    ws.send(JSON.stringify({
+                        message: 'is_turn'
+                    }));
                     break;
                 case "return_players":
                     $scope.$apply(function () {
@@ -48,6 +59,16 @@ angular.module('fibApp.view1', ['ngRoute'])
                     $scope.$apply(function () {
                         $scope.status = "You lost a card!";
                         $scope.user.cards = data.cards;
+                    });
+                    break;
+                case "not_your_turn":
+                    $scope.$apply(function () {
+                        $scope.status = "It's not your turn!!";
+                    });
+                    break;
+                case "is_turn":
+                    $scope.$apply(function () {
+                        $scope.is_turn = data.is_turn;
                     });
                     break;
                 default:

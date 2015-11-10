@@ -7,14 +7,26 @@
 </form>
 
 <p>I am {{user.name}} and I have {{user.cards.length}} cards.</p>
+<label><input type="checkbox" ng-model="is_turn"> Is it my turn?</label>
 
 <h2>Request Card</h2>
 <form novalidate class="simple-form">
-    <input type="text" ng-model="req_from.name"/><br>
-    <input type="number" ng-model="req_card.number"/><br/>
-    <input type="text" ng-model="req_card.suit"/><br/>
+    <label>From
+        <select ng-model="req_from"
+                ng-options="player.name for player in players">
+        </select>
+    </label><br/>
+    <label>Card number
+        <input type="number" ng-model="req_card.number"/><br/>
+    </label>
+    <label>Suit
+        <select ng-model="req_card.suit"
+                ng-options="suit for suit in game_info.card_info.suits">
+        </select>
+    </label><br/>
     <input type="submit" ng-click="request_card()" value="Request"/>
 </form>
+
 
 <h2>{{status}}</h2>
 

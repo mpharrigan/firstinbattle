@@ -1,11 +1,10 @@
+import random
+
 from tornado.testing import gen_test, AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
+
 from firstinbattle.gofish import js
 from firstinbattle.main import FIBApplication
-
-FIBApplication().listen(7778)
-
-import random
 
 
 class TestGoFish(AsyncHTTPTestCase):
@@ -169,3 +168,93 @@ class TestGoFish(AsyncHTTPTestCase):
 
         # p2 should not be informed of his loss
         # cl2 = yield ws2.read_message()
+
+    @gen_test
+    def test_turn_tracker(self):
+        ws1 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+        ws2 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+
+        ws1.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p1'}
+        }))
+        _ = yield ws1.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+
+        ws2.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p2'}
+        }))
+        _ = yield ws2.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+        _ = yield ws2.read_message()  # return_players
+
+        # Should be p1's turn
+        ws1.write_message(js.encode({
+            'message': 'is_turn'
+        }))
+        it1 = yield ws1.read_message()  # is_turn
+        it1 = js.loads(it1)
+        self.assertEqual(it1['message'], 'is_turn')
+        self.assertTrue(it1['is_turn'])
+
+        # Should not be p2's turn
+        ws2.write_message(js.encode({
+            'message': 'is_turn'
+        }))
+        it2 = yield ws2.read_message()  # is_turn
+        it2 = js.loads(it2)
+        self.assertEqual(it2['message'], 'is_turn')
+        self.assertFalse(it2['is_turn'])
+
+        # p1 takes his turn
+        ws1.write_message(js.encode({
+            'message': 'request_card',
+            'card': {'number': 2, 'suit': 'diamond'},
+            'from': {'name': 'p2'},
+        }))
+        rc1 = yield ws1.read_message()  # receive_card
+        rc1 = js.loads(rc1)
+        self.assertEqual(rc1['message'], 'receive_card')
+
+        # A turn being taken should broadcast turn info.
+        it1 = yield ws1.read_message()  # is_turn (broadcast)
+        it2 = yield ws2.read_message()  # is_turn (broadcast)
+        it1 = js.loads(it1)
+        it2 = js.loads(it2)
+        self.assertEqual(it1['message'], 'is_turn')
+        self.assertEqual(it2['message'], 'is_turn')
+        self.assertFalse(it1['is_turn'])
+        self.assertTrue(it2['is_turn'])
+
+        # Should not be p1's turn
+        ws1.write_message(js.encode({
+            'message': 'is_turn'
+        }))
+        it1 = yield ws1.read_message()  # is_turn
+        it1 = js.loads(it1)
+        self.assertEqual(it1['message'], 'is_turn')
+        self.assertFalse(it1['is_turn'])
+
+        # Should be p2's turn
+        ws2.write_message(js.encode({
+            'message': 'is_turn'
+        }))
+        it2 = yield ws2.read_message()  # is_turn
+        it2 = js.loads(it2)
+        self.assertEqual(it2['message'], 'is_turn')
+        self.assertTrue(it2['is_turn'])
+
+        # Attempting out of turn request should result in a slap
+        ws1.write_message(js.encode({
+            'message': 'request_card',
+            'card': {'number': 3, 'suit': 'diamond'},
+            'from': {'name': 'p2'},
+        }))
+        rc1 = yield ws1.read_message()  # receive_card
+        rc1 = js.loads(rc1)
+        self.assertEqual(rc1['message'], 'not_your_turn')

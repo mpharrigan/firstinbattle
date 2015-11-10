@@ -94,9 +94,12 @@ class GoFish:
         random.shuffle(self.dealer.cards)
         self.players = []
 
+        self._turn = 0
+
     def new_player(self, player):
         player.cards = self.dealer.cards[:self.hand_size]
         self.dealer.cards = self.dealer.cards[self.hand_size:]
+
         self.players += [player]
         return player
 
@@ -105,14 +108,21 @@ class GoFish:
         for player in self.players:
             if player.name == id:
                 return player
+        raise ValueError("Could not find player {}".format(id))
+
+    def is_turn(self, player):
+        return player == self.players[self._turn]
+
+    def next_turn(self):
+        self._turn += 1
+        if self._turn >= len(self.players):
+            self._turn = 0
 
 
 class GoFishRh(RequestHandler):
     def post(self, command):
         data = js.loads(self.request.body)
-        if command == 'new_game':
-            user = data['user']
-            print(user)
+        # TODO
 
 
 class GoFishWs(WebSocketHandler):
@@ -135,8 +145,7 @@ class GoFishWs(WebSocketHandler):
     def register_player(self, data):
         """Trigger when a new user is entering the game
 
-        This will cause the `return_players` message to be sent to
-        all WSs
+        This will cause the `return_players` message to broadcast
 
         Accepts
         -------
@@ -147,6 +156,11 @@ class GoFishWs(WebSocketHandler):
         --------
         'player_registered'
             - cards : list
+
+        Broadcasts
+        ----------
+        'return_players'
+            - players : list
         """
         player = self.game.new_player(Player(
             name=data['user']['name'],
@@ -185,6 +199,9 @@ class GoFishWs(WebSocketHandler):
             - number : int
             - suit : str
 
+        This will cause the turn tracker to advance and cause the
+        `is_turn` message to be broadcast
+
         Responds
         --------
         'receive_card'
@@ -193,7 +210,22 @@ class GoFishWs(WebSocketHandler):
                 True if from player, go fish otherwise
             - cards : list of Card
                 Your current hand
+        'not_your_turn'
+            If it is not your turn
+
+        Broadcasts
+        ----------
+        'is_turn'
+            - is_turn : bool
         """
+
+        # Check turn
+        if not self.game.is_turn(self.player):
+            self.write_message(js.encode({
+                'message': 'not_your_turn',
+            }))
+            return
+
         other_player = self.game.get_player(data['from']['name'])
         card = Card(**data['card'])
         try:
@@ -213,11 +245,22 @@ class GoFishWs(WebSocketHandler):
             'cards': self.player.cards
         }))
 
+        self.game.next_turn()
+
+        for player in self.game.players:
+            player.ws.is_turn(None)
+
     def lose_card(self, card):
         self.write_message(js.encode({
             'message': 'card_lost',
             'card': card,
             'cards': self.player.cards
+        }))
+
+    def is_turn(self, data):
+        self.write_message(js.encode({
+            'message': 'is_turn',
+            'is_turn': self.game.is_turn(self.player)
         }))
 
     def on_message(self, data):
