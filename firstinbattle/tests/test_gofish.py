@@ -1,12 +1,16 @@
 import random
-from tornado.testing import gen_test, AsyncHTTPTestCase
-from tornado.websocket import websocket_connect
-from firstinbattle.gofish import js, Player, Card, Pair
-from firstinbattle.main import FIBApplication
 from unittest import TestCase
 
+from tornado.testing import gen_test, AsyncHTTPTestCase
+from tornado.websocket import websocket_connect
 
-class TestGoFishPython(TestCase):
+from firstinbattle.deck import Card
+from firstinbattle.gofish import Player, Pair
+from firstinbattle.json import js
+from firstinbattle.main import FIBApplication
+
+
+class TestPlayer(TestCase):
     def test_consolidate_pairs1(self):
         p1 = Player('p1')
         p1.cards = {
@@ -51,7 +55,11 @@ class TestGoFishPython(TestCase):
         self.assertSetEqual(p1.cards, cards_should_be)
 
 
-class TestGoFish(AsyncHTTPTestCase):
+class TestGoFish(TestCase):
+    pass
+
+
+class TestGoFishWs(AsyncHTTPTestCase):
     def get_app(self):
         return FIBApplication()
 
@@ -271,7 +279,7 @@ class TestGoFish(AsyncHTTPTestCase):
         it1 = js.loads(it1)
         it2 = js.loads(it2)
         self.assertEqual(it1['message'], 'is_turn')
-        self.assertEqual(it2['message'], 'is_turn') # TODO: could be lose card
+        self.assertEqual(it2['message'], 'is_turn')  # TODO: could be lose card
         self.assertFalse(it1['is_turn'])
         self.assertTrue(it2['is_turn'])
 

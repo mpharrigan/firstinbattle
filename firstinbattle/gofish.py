@@ -1,93 +1,22 @@
-from tornado.websocket import WebSocketHandler
-from tornado.web import RequestHandler
 import logging
-import json as _json
-import itertools
 import random
 from collections import defaultdict
 
+from tornado.web import RequestHandler
+from tornado.websocket import WebSocketHandler
+
+from .deck import StandardDeck, Card, NPair
+from .json import js
+
 log = logging.getLogger(__name__)
-
-SUITS = {'heart', 'spade', 'club', 'diamond'}
-COLORS = {
-    'heart': 'red',
-    'diamond': 'red',
-    'spade': 'black',
-    'club': 'black',
-}
-NUMBERS = set(range(13))
-
-
-class JSON(_json.JSONEncoder):
-    def default(self, obj):
-        if hasattr(obj, 'json'):
-            return obj.json
-        if isinstance(obj, set):
-            return list(obj)
-        # Let the base class default method raise the TypeError
-        return _json.JSONEncoder.default(self, obj)
-
-    def loads(self, bytes):
-        return _json.loads(bytes, encoding='utf-8')
-
-
-js = JSON()
-
-
-def get_deck():
-    cards = set(Card(number, suit)
-                for number, suit
-                in itertools.product(NUMBERS, SUITS))
-    return cards
 
 
 class DontHave(Exception):
     pass
 
 
-class Card:
-    def __init__(self, number, suit):
-        self.number = number
-        self.suit = suit
-
-    @property
-    def json(self):
-        return {
-            'number': self.number,
-            'suit': self.suit
-        }
-
-    def __eq__(self, other):
-        return self.number == other.number and self.suit == other.suit
-
-    def __hash__(self):
-        return hash((
-            self.number,
-            self.suit,
-        ))
-
-    def __repr__(self):
-        return "{number} of {suit}".format(**self.__dict__)
-
-
-class Pair:
-    def __init__(self, *cards):
-        assert len(cards) == 2  # maybe relax this?
-        self.cards = frozenset(cards)
-
-    @property
-    def json(self):
-        return {'card{}'.format(i): card
-                for i, card in enumerate(self.cards)}
-
-    def __eq__(self, other):
-        return self.cards == other.cards
-
-    def __hash__(self):
-        return hash(self.cards)
-
-    def __repr__(self):
-        return "<" + ", ".join(repr(card) for card in self.cards) + ">"
+class Pair(NPair):
+    N = 2
 
 
 class Player:
@@ -140,7 +69,7 @@ class GoFish:
 
     def __init__(self):
         self.dealer = Player('dealer')
-        self.dealer.cards = get_deck()
+        self.dealer.cards = StandardDeck.get_deck()
         self.players = []
 
         self._turn = 0
