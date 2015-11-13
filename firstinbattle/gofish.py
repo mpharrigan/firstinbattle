@@ -144,21 +144,6 @@ class GoFishWs(WebSocketHandler):
         """Trigger when a new user is entering the game
 
         This will cause the `return_players` message to broadcast
-
-        Accepts
-        -------
-        user
-            - name
-
-        Responds
-        --------
-        'player_registered'
-            - cards : list
-
-        Broadcasts
-        ----------
-        'return_players'
-            - players : list
         """
         player = self.game.new_player(Player(
             name=data['user']['name'],
@@ -175,11 +160,6 @@ class GoFishWs(WebSocketHandler):
 
     def get_players(self, data):
         """Request unconfidential player data
-
-        Responds
-        --------
-        'return_players'
-            - players : list
         """
         self.write_message(js.encode({
             'message': 'return_players',
@@ -189,32 +169,7 @@ class GoFishWs(WebSocketHandler):
     def request_card(self, data):
         """Ask another player for a card.
 
-        Accepts
-        -------
-        from : Player
-            - name : str
-        card : Card-ish
-            - number : int
-            - suit : str
-
-        This will cause the turn tracker to advance and cause the
-        `is_turn` message to be broadcast
-
-        Responds
-        --------
-        'receive_card'
-            - card : Card
-            - success : bool
-                True if from player, go fish otherwise
-            - cards : list of Card
-                Your current hand
-        'not_your_turn'
-            If it is not your turn
-
-        Broadcasts
-        ----------
-        'is_turn'
-            - is_turn : bool
+        Will cause a broadcast of `is_turn`
         """
         other_player = self.game.get_player(data['from']['name'])
         card = Card(**data['card'])
@@ -250,16 +205,6 @@ class GoFishWs(WebSocketHandler):
         The card should have already been removed from the player's hand.
         This serves to notify the user that a card has been stolen.
 
-        Parameters
-        ----------
-        card : Card
-            The card that was lost
-
-        Responds
-        --------
-        'card_lost'
-            - card : Card
-            - cards : list of Card
         """
         self.write_message(js.encode({
             'message': 'card_lost',
@@ -269,11 +214,6 @@ class GoFishWs(WebSocketHandler):
 
     def is_turn(self, data):
         """Ask 'is it my turn?'
-
-        Responds
-        --------
-        'is_turn'
-            - is_turn : bool
         """
         self.write_message(js.encode({
             'message': 'is_turn',
@@ -282,16 +222,6 @@ class GoFishWs(WebSocketHandler):
 
     def consolidate_pairs(self, data):
         """Take hand and consolidate pairs
-
-        Responds
-        --------
-        'pairs_consolidated'
-            - new_pairs : list of Pair
-                Pairs that were consolidated this time
-            - all_pairs : list of Pair
-                All pairs the user has
-            - cards : list of Card
-                Current hand
         """
         self.player.consolidate_pairs()
 
