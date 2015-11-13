@@ -48,3 +48,4 @@ def main():
 def wsgi():
     application = FIBApplication()
     wsgi_app = tornado.wsgi.WSGIAdapter(application)
+    return wsgi_app
