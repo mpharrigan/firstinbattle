@@ -4,6 +4,7 @@ import logging
 import json as _json
 import itertools
 import random
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ class JSON(_json.JSONEncoder):
     def default(self, obj):
         if hasattr(obj, 'json'):
             return obj.json
+        if isinstance(obj, set):
+            return list(obj)
         # Let the base class default method raise the TypeError
         return _json.JSONEncoder.default(self, obj)
 
@@ -32,9 +35,9 @@ js = JSON()
 
 
 def get_deck():
-    cards = [Card(number, suit)
-             for number, suit
-             in itertools.product(NUMBERS, SUITS)]
+    cards = set(Card(number, suit)
+                for number, suit
+                in itertools.product(NUMBERS, SUITS))
     return cards
 
 
@@ -57,12 +60,42 @@ class Card:
     def __eq__(self, other):
         return self.number == other.number and self.suit == other.suit
 
+    def __hash__(self):
+        return hash((
+            self.number,
+            self.suit,
+        ))
+
+    def __repr__(self):
+        return "{number} of {suit}".format(**self.__dict__)
+
+
+class Pair:
+    def __init__(self, *cards):
+        assert len(cards) == 2  # maybe relax this?
+        self.cards = frozenset(cards)
+
+    @property
+    def json(self):
+        return {'card{}'.format(i): card
+                for i, card in enumerate(self.cards)}
+
+    def __eq__(self, other):
+        return self.cards == other.cards
+
+    def __hash__(self):
+        return hash(self.cards)
+
+    def __repr__(self):
+        return "<" + ", ".join(repr(card) for card in self.cards) + ">"
+
 
 class Player:
     def __init__(self, name, ws=None):
         self.name = name
         self.ws = ws
-        self.cards = []
+        self.cards = set()
+        self.pairs = set()
 
     def request(self, req_card):
         """Other players may ask for a card. We have to give it to them
@@ -75,6 +108,23 @@ class Player:
         else:
             self.cards.remove(req_card)
             return req_card
+
+    def consolidate_pairs(self):
+        """Take our hand and combine pairs."""
+        by_number = defaultdict(set)
+        for card in self.cards:
+            by_number[card.number].add(card)
+
+        new_pairs = set()
+        for num, cards in by_number.items():
+            while len(cards) >= 2:
+                pair = Pair(*(cards.pop() for _ in range(2)))
+                new_pairs.add(pair)
+                for c in pair.cards:
+                    self.cards.remove(c)
+
+        self.pairs |= new_pairs
+        return new_pairs
 
     @property
     def json(self):
@@ -91,14 +141,13 @@ class GoFish:
     def __init__(self):
         self.dealer = Player('dealer')
         self.dealer.cards = get_deck()
-        random.shuffle(self.dealer.cards)
         self.players = []
 
         self._turn = 0
 
     def new_player(self, player):
-        player.cards = self.dealer.cards[:self.hand_size]
-        self.dealer.cards = self.dealer.cards[self.hand_size:]
+        player.cards = set(random.sample(self.dealer.cards, self.hand_size))
+        self.dealer.cards -= player.cards
 
         self.players += [player]
         return player
@@ -237,7 +286,7 @@ class GoFishWs(WebSocketHandler):
             card = self.game.dealer.request(None)
             success = False
 
-        self.player.cards += [card]
+        self.player.cards.add(card)
         self.write_message(js.encode({
             'message': 'receive_card',
             'success': success,
@@ -251,6 +300,22 @@ class GoFishWs(WebSocketHandler):
             player.ws.is_turn(None)
 
     def lose_card(self, card):
+        """Called on a player that has lost a card
+
+        The card should have already been removed from the player's hand.
+        This serves to notify the user that a card has been stolen.
+
+        Parameters
+        ----------
+        card : Card
+            The card that was lost
+
+        Responds
+        --------
+        'card_lost'
+            - card : Card
+            - cards : list of Card
+        """
         self.write_message(js.encode({
             'message': 'card_lost',
             'card': card,
@@ -258,10 +323,32 @@ class GoFishWs(WebSocketHandler):
         }))
 
     def is_turn(self, data):
+        """Ask 'is it my turn?'
+
+        Responds
+        --------
+        'is_turn'
+            - is_turn : bool
+        """
         self.write_message(js.encode({
             'message': 'is_turn',
             'is_turn': self.game.is_turn(self.player)
         }))
+
+    def consolidate_pairs(self, data):
+        """Take hand and consolidate pairs
+
+        Responds
+        --------
+        'pairs_consolidated'
+            - new_pairs : list of Pair
+                Pairs that were consolidated this time
+            - all_pairs : list of Pair
+                All pairs the user has
+            - cards : list of Card
+                Current hand
+        """
+        self.player.consolidate_pairs()
 
     def on_message(self, data):
         data = js.loads(data)

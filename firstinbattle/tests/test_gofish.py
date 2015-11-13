@@ -1,10 +1,54 @@
 import random
-
 from tornado.testing import gen_test, AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
-
-from firstinbattle.gofish import js
+from firstinbattle.gofish import js, Player, Card, Pair
 from firstinbattle.main import FIBApplication
+from unittest import TestCase
+
+
+class TestGoFishPython(TestCase):
+    def test_consolidate_pairs1(self):
+        p1 = Player('p1')
+        p1.cards = {
+            Card(5, 'diamond'),
+            Card(5, 'heart'),
+            Card(3, 'heart'),
+            Card(5, 'club'),
+        }
+
+        new_pairs_could_be = {
+            Pair(Card(5, 'diamond'), Card(5, 'heart')),
+            Pair(Card(5, 'diamond'), Card(5, 'club')),
+            Pair(Card(5, 'heart'), Card(5, 'club')),
+        }
+
+        new_pairs = p1.consolidate_pairs()
+        self.assertTrue(new_pairs < new_pairs_could_be)
+        self.assertSetEqual(p1.pairs, new_pairs)
+
+    def test_consolidate_pairs2(self):
+        p1 = Player('p1')
+        p1.cards = {
+            Card(5, 'diamond'),
+            Card(5, 'heart'),
+            Card(9, 'heart'),
+            Card(9, 'club'),
+            Card(2, 'club'),
+        }
+
+        new_pairs_should_be = {
+            Pair(Card(5, 'diamond'), Card(5, 'heart')),
+            Pair(Card(9, 'heart'), Card(9, 'club')),
+        }
+
+        cards_should_be = {
+            Card(2, 'club'),
+        }
+
+        new_pairs = p1.consolidate_pairs()
+        self.assertSetEqual(new_pairs, new_pairs_should_be)
+        self.assertSetEqual(p1.pairs, new_pairs_should_be)
+        self.assertSetEqual(p1.cards, cards_should_be)
 
 
 class TestGoFish(AsyncHTTPTestCase):
@@ -227,7 +271,7 @@ class TestGoFish(AsyncHTTPTestCase):
         it1 = js.loads(it1)
         it2 = js.loads(it2)
         self.assertEqual(it1['message'], 'is_turn')
-        self.assertEqual(it2['message'], 'is_turn')
+        self.assertEqual(it2['message'], 'is_turn') # TODO: could be lose card
         self.assertFalse(it1['is_turn'])
         self.assertTrue(it2['is_turn'])
 
@@ -258,3 +302,56 @@ class TestGoFish(AsyncHTTPTestCase):
         rc1 = yield ws1.read_message()  # receive_card
         rc1 = js.loads(rc1)
         self.assertEqual(rc1['message'], 'not_your_turn')
+
+    @gen_test
+    def test_pair_consolidate1(self):
+        ws1 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+        ws1.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p1'}
+        }))
+        _ = yield ws1.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+
+        ws1.write_message(js.encode({
+            'message': 'consolidate_pairs'
+        }))
+        pc1 = yield ws1.read_message()  # pairs_consolidated
+        pc1 = js.loads(pc1)
+        self.assertEqual(pc1['message'], 'pairs_consolidated')
+        self.assertSetEqual(pc1.keys(),
+                            {'message', 'new_pairs', 'all_pairs', 'cards'})
+        # we haven't consolidated before, so these should be equal
+        self.assertListEqual(pc1['new_pairs'], pc1['all_pairs'])
+        self.assertIn(len(pc1['new_pairs']), range(0, 7 // 2 + 1))
+
+        for pair in pc1['new_pairs']:
+            self.assertSetEqual(pair.keys(), {'card1', 'card2'})
+            self.assertEqual(pair['card1']['number'], pair['card2']['number'])
+            self.assertNotEqual(pair['card1']['suit'], pair['card2']['suit'])
+
+    @gen_test
+    def test_pair_consolidate2(self):
+        ws1 = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+        ws1.write_message(js.encode({
+            'message': 'register_player',
+            'user': {'name': 'p1'}
+        }))
+        _ = yield ws1.read_message()  # player_registered
+        _ = yield ws1.read_message()  # return_players
+
+        # Get all the cards
+        for _ in range(52 - 7):
+            ws1.write_message(js.encode({
+                'message': 'request_card',
+                'from': {'name': 'p1'},
+                'card': {'suit': 'xxxx', 'number': 0},
+            }))
+            cr1 = yield ws1.read_message()  # receive_card
+
+        cr1 = js.loads(cr1)
+        self.assertEqual(len(cr1['cards']), 52)
