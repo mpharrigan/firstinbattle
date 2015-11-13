@@ -223,7 +223,13 @@ class GoFishWs(WebSocketHandler):
     def consolidate_pairs(self, data):
         """Take hand and consolidate pairs
         """
-        self.player.consolidate_pairs()
+        new_pairs = self.player.consolidate_pairs()
+        self.write_message(js.encode({
+            'message': 'pairs_consolidated',
+            'all_pairs': self.player.pairs,
+            'new_pairs': new_pairs,
+            'cards': self.player.cards,
+        }))
 
     def on_message(self, data):
         data = js.loads(data)

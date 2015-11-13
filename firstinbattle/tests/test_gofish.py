@@ -165,7 +165,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         self.assertEqual(data['message'], 'player_registered')
         self.assertEqual(len(data['cards']), 7)
         for card in data['cards']:
-            self.assertEqual(set(card.keys()), {'number', 'suit'})
+            self.assertSetEqual(set(card.keys()), {'number', 'suit'})
             self.assertTrue(0 <= card['number'] < 13)
 
     @gen_test
@@ -198,7 +198,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         self.assertEqual(r1, r2)
         self.assertEqual(len(r1['players']), 2)
         for plyr in r1['players']:
-            self.assertEqual(set(plyr.keys()), {'name'})
+            self.assertSetEqual(set(plyr.keys()), {'name'})
 
     @gen_test
     def test_steal_card(self):
@@ -414,16 +414,16 @@ class TestGoFishWs(AsyncHTTPTestCase):
         pc1 = yield ws1.read_message()  # pairs_consolidated
         pc1 = js.loads(pc1)
         self.assertEqual(pc1['message'], 'pairs_consolidated')
-        self.assertSetEqual(pc1.keys(),
+        self.assertSetEqual(set(pc1.keys()),
                             {'message', 'new_pairs', 'all_pairs', 'cards'})
         # we haven't consolidated before, so these should be equal
         self.assertListEqual(pc1['new_pairs'], pc1['all_pairs'])
         self.assertIn(len(pc1['new_pairs']), range(0, 7 // 2 + 1))
 
         for pair in pc1['new_pairs']:
-            self.assertSetEqual(pair.keys(), {'card1', 'card2'})
-            self.assertEqual(pair['card1']['number'], pair['card2']['number'])
-            self.assertNotEqual(pair['card1']['suit'], pair['card2']['suit'])
+            self.assertSetEqual(set(pair.keys()), {'card0', 'card1'})
+            self.assertEqual(pair['card0']['number'], pair['card1']['number'])
+            self.assertNotEqual(pair['card0']['suit'], pair['card1']['suit'])
 
     @gen_test
     def test_pair_consolidate2(self):
@@ -438,13 +438,25 @@ class TestGoFishWs(AsyncHTTPTestCase):
         _ = yield ws1.read_message()  # return_players
 
         # Get all the cards
-        for _ in range(52 - 7):
+        for i in range(52 - 7):
             ws1.write_message(js.encode({
                 'message': 'request_card',
                 'from': {'name': 'p1'},
                 'card': {'suit': 'xxxx', 'number': 0},
             }))
             cr1 = yield ws1.read_message()  # receive_card
+            _ = yield ws1.read_message()  # is_turn
+            cr1 = js.loads(cr1)
+            self.assertEqual(cr1['message'], 'receive_card')
+            self.assertEqual(len(cr1['cards']), 7 + 1 + i)
 
-        cr1 = js.loads(cr1)
         self.assertEqual(len(cr1['cards']), 52)
+        ws1.write_message(js.encode({
+            'message': 'consolidate_pairs',
+        }))
+        pc1 = yield ws1.read_message()  # pairs_consolidated
+        pc1 = js.loads(pc1)
+        self.assertEqual(pc1['message'], 'pairs_consolidated')
+
+        self.assertEqual(len(pc1['all_pairs']), 52 // 2)
+        self.assertEqual(len(pc1['cards']), 0)
