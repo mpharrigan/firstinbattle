@@ -45,7 +45,5 @@ def main():
     tornado.ioloop.IOLoop.instance().start()
 
 
-def wsgi():
-    application = FIBApplication()
-    wsgi_app = tornado.wsgi.WSGIAdapter(application)
-    return wsgi_app
+application = FIBApplication()
+wsgi_app = tornado.wsgi.WSGIAdapter(application)
