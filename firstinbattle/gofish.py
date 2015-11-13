@@ -15,6 +15,10 @@ class DontHave(Exception):
     pass
 
 
+class OutOfTurn(Exception):
+    pass
+
+
 class Pair(NPair):
     N = 2
 
@@ -95,6 +99,22 @@ class GoFish:
         self._turn += 1
         if self._turn >= len(self.players):
             self._turn = 0
+
+    def request(self, *, card, from_player, to_player):
+        if not self.is_turn(to_player):
+            raise OutOfTurn
+
+        try:
+            card = from_player.request(card)
+            success = True
+        except DontHave:
+            # Go fish!
+            card = self.dealer.request(None)
+            success = False
+
+        to_player.cards.add(card)
+        self.next_turn()
+        return card, success
 
 
 class GoFishRh(RequestHandler):
@@ -196,37 +216,33 @@ class GoFishWs(WebSocketHandler):
         'is_turn'
             - is_turn : bool
         """
+        other_player = self.game.get_player(data['from']['name'])
+        card = Card(**data['card'])
 
-        # Check turn
-        if not self.game.is_turn(self.player):
+        try:
+            card, success = self.game.request(
+                card=card,
+                from_player=other_player,
+                to_player=self.player,
+            )
+            # Tell current player of his conquests
+            self.write_message(js.encode({
+                'message': 'receive_card',
+                'success': success,
+                'card': card,
+                'cards': self.player.cards
+            }))
+            # Tell other player if they lost a card
+            if success:
+                other_player.ws.lose_card(card)
+
+            # Tell everyone their turn
+            for player in self.game.players:
+                player.ws.is_turn(None)
+        except OutOfTurn:
             self.write_message(js.encode({
                 'message': 'not_your_turn',
             }))
-            return
-
-        other_player = self.game.get_player(data['from']['name'])
-        card = Card(**data['card'])
-        try:
-            card = other_player.request(card)
-            success = True
-            other_player.ws.lose_card(card)
-        except DontHave:
-            # Go fish!
-            card = self.game.dealer.request(None)
-            success = False
-
-        self.player.cards.add(card)
-        self.write_message(js.encode({
-            'message': 'receive_card',
-            'success': success,
-            'card': card,
-            'cards': self.player.cards
-        }))
-
-        self.game.next_turn()
-
-        for player in self.game.players:
-            player.ws.is_turn(None)
 
     def lose_card(self, card):
         """Called on a player that has lost a card

@@ -5,7 +5,7 @@ from tornado.testing import gen_test, AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
 
 from firstinbattle.deck import Card
-from firstinbattle.gofish import Player, Pair
+from firstinbattle.gofish import Player, Pair, GoFish
 from firstinbattle.json import js
 from firstinbattle.main import FIBApplication
 
@@ -56,7 +56,92 @@ class TestPlayer(TestCase):
 
 
 class TestGoFish(TestCase):
-    pass
+    def test_dealer(self):
+        game = GoFish()
+        card = game.dealer.request(None)
+        self.assertTrue(isinstance(card, Card))
+
+    def test_new_player(self):
+        game = GoFish()
+        game.new_player(Player("p1"))
+        game.new_player(Player("p2"))
+
+        self.assertEqual(len(game.players), 2)
+        for p in game.players:
+            self.assertEqual(len(p.cards), 7)
+
+        self.assertEqual(len(game.dealer.cards), 52 - 7 - 7)
+
+    def test_get_player(self):
+        # TODO: This should use a better guid
+        p1 = Player("p1")
+        game = GoFish()
+        game.new_player(p1)
+        game.new_player(Player("p2"))
+        p1_got = game.get_player("p1")
+        self.assertEqual(p1, p1_got)
+
+    def test_is_turn(self):
+        p1 = Player("p1")
+        p2 = Player("p2")
+        game = GoFish()
+        game.new_player(p1)
+        game.new_player(p2)
+
+        self.assertTrue(game.is_turn(p1))
+        self.assertFalse(game.is_turn(p2))
+
+        game.next_turn()
+
+        self.assertFalse(game.is_turn(p1))
+        self.assertTrue(game.is_turn(p2))
+
+        game.next_turn()
+        self.assertTrue(game.is_turn(p1))
+        self.assertFalse(game.is_turn(p2))
+
+    def test_request1(self):
+        p1 = Player("p1")
+        p2 = Player("p2")
+        game = GoFish()
+        game.new_player(p1)
+        game.new_player(p2)
+
+        card, success = game.request(
+            card=Card(5, 'xxxx'),
+            from_player=p2,
+            to_player=p1,
+        )
+
+        self.assertFalse(success)
+        self.assertFalse(game.is_turn(p1))
+        self.assertTrue(game.is_turn(p2))
+        self.assertNotIn(card, p2.cards)
+        self.assertEqual(len(p2.cards), 7)
+        self.assertEqual(len(p1.cards), 7 + 1)
+
+    def test_request2(self):
+        p1 = Player("p1")
+        p2 = Player("p2")
+        game = GoFish()
+        game.new_player(p1)
+        game.new_player(p2)
+
+        steal_card = random.sample(p2.cards, 1)[0]
+
+        card, success = game.request(
+            card=steal_card,
+            from_player=p2,
+            to_player=p1,
+        )
+
+        self.assertTrue(success)
+        self.assertFalse(game.is_turn(p1))
+        self.assertTrue(game.is_turn(p2))
+        self.assertNotIn(steal_card, p2.cards)
+        self.assertIn(steal_card, p1.cards)
+        self.assertEqual(len(p2.cards), 7 - 1)
+        self.assertEqual(len(p1.cards), 7 + 1)
 
 
 class TestGoFishWs(AsyncHTTPTestCase):
