@@ -42,7 +42,7 @@ class FIBApplication(Application):
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    port = os.environ.get("PORT", 7777)
+    port = int(os.environ.get("PORT", 7777))
     log.info("Listening on port %d", port)
     FIBApplication().listen(port)
     tornado.ioloop.IOLoop.instance().start()
