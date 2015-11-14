@@ -1,11 +1,14 @@
 import logging
+import os
+from collections import defaultdict
+
 import tornado.ioloop
 import tornado.web
 import tornado.wsgi
 from pkg_resources import resource_filename
 from tornado.web import Application, StaticFileHandler
+
 from .gofish import GoFishRh, GoFishWs
-from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +42,7 @@ class FIBApplication(Application):
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
-    port = 7777
+    port = os.environ.get("PORT", 7777)
     log.info("Listening on port %d", port)
     FIBApplication().listen(port)
     tornado.ioloop.IOLoop.instance().start()
