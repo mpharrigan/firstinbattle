@@ -1,1 +1,1 @@
-web: python firstinbattle/scipt.py
+web: python firstinbattle/script.py
