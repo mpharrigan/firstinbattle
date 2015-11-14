@@ -6,7 +6,7 @@ from tornado.web import RequestHandler
 from tornado.websocket import WebSocketHandler
 
 from .deck import StandardDeck, Card, NPair
-from .json import js
+from .json_util import js
 
 log = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from tornado.websocket import websocket_connect
 
 from firstinbattle.deck import Card
 from firstinbattle.gofish import Player, Pair, GoFish
-from firstinbattle.json import js
+from firstinbattle.json_util import js
 from firstinbattle.main import FIBApplication
 
 

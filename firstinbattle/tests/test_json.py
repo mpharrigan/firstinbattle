@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from firstinbattle.deck import Card
-from firstinbattle.json import js
+from firstinbattle.json_util import js
 
 
 class TestJson(TestCase):
