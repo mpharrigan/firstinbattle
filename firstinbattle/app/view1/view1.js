@@ -26,7 +26,9 @@ angular.module('fibApp.view1', ['ngRoute'])
         $scope.players = [];
         $scope.status = "Nothing happened yet";
         $scope.is_turn = false;
-        var ws = new WebSocket("ws://localhost:7777/gofish-ws");
+
+        var protocolPrefix = (window.location.protocol === 'https:') ? 'wss:' : 'ws:';
+        var ws = new WebSocket(protocolPrefix + '//' + location.host + '/gofish-ws');
 
         ws.onmessage = function (evt) {
             var data = JSON.parse(evt.data);
