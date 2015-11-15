@@ -1,4 +1,5 @@
 import json as _json
+import uuid
 
 
 class JSON(_json.JSONEncoder):
@@ -7,6 +8,8 @@ class JSON(_json.JSONEncoder):
             return obj.json
         if isinstance(obj, set):
             return list(obj)
+        if isinstance(obj, uuid.UUID):
+            return obj.hex
         # Let the base class default method raise the TypeError
         return _json.JSONEncoder.default(self, obj)
 

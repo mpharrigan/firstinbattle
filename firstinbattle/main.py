@@ -31,12 +31,14 @@ class FIBApplication(Application):
 
     def __init__(self):
         self.games = defaultdict(list)
+        self.users = dict()
 
         super().__init__(
             self._get_handlers(),
             template_path=resource_filename(__name__, 'templates/'),
             static_path=resource_filename(__name__, 'static/'),
             debug=False,
+            cookie_secret="oooh--secret",
         )
 
 

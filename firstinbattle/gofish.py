@@ -1,5 +1,6 @@
 import logging
 import random
+import uuid
 from collections import defaultdict
 
 from tornado.web import RequestHandler
@@ -24,8 +25,9 @@ class Pair(NPair):
 
 
 class Player:
-    def __init__(self, name, ws=None):
+    def __init__(self, name, uuid, ws=None):
         self.name = name
+        self.uuid = uuid
         self.ws = ws
         self.cards = set()
         self.pairs = set()
@@ -72,7 +74,7 @@ class GoFish:
     hand_size = 7
 
     def __init__(self):
-        self.dealer = Player('dealer')
+        self.dealer = Player('dealer', uuid=uuid.uuid4())
         self.dealer.cards = StandardDeck.get_deck()
         self.players = []
 
@@ -85,12 +87,11 @@ class GoFish:
         self.players += [player]
         return player
 
-    def get_player(self, id):
-        # TODO: Use some sort of guid
+    def get_player(self, uuid):
         for player in self.players:
-            if player.name == id:
+            if player.uuid == uuid:
                 return player
-        raise ValueError("Could not find player {}".format(id))
+        raise KeyError("Could not find player {}".format(repr(uuid)))
 
     def is_turn(self, player):
         return player == self.players[self._turn]
@@ -118,6 +119,14 @@ class GoFish:
 
 
 class GoFishRh(RequestHandler):
+    def get(self, command):
+        if command == 'login':
+            self.set_secure_cookie("user", uuid.uuid4().bytes)
+            log.debug("Set a secure cookie")
+            self.write("<h2>logged in</h2>")
+        else:
+            self.write("<h2>Bad command</h2>")
+
     def post(self, command):
         data = js.loads(self.request.body)
         # TODO
@@ -127,18 +136,36 @@ class GoFishWs(WebSocketHandler):
     game_class = GoFish
     ws_id = 0
 
+    def get_current_user(self):
+        cookie = self.get_secure_cookie("user")
+        if cookie is None:
+            return
+        return uuid.UUID(bytes=cookie)
+
     def open(self, *args, **kwargs):
         log.info("Websocket opened")
-        games = self.application.games[self.game_class.game_name]
 
+        if not self.current_user:
+            log.error("Please set user cookie!")
+            self.close()
+            return
+
+        log.info("User is {}".format(self.current_user))
+
+        games = self.application.games[self.game_class.game_name]
         # TODO: choose game
         if len(games) > 0:
             game = games[0]
         else:
             game = self.game_class()
             games.append(game)
-
         self.game = game
+
+        try:
+            self.game.get_player(self.current_user).ws = self
+            log.debug("Updated existing player to use this as the ws")
+        except KeyError:
+            log.debug("Doesn't look like this user had any ws before")
 
     def register_player(self, data):
         """Trigger when a new user is entering the game
@@ -148,6 +175,7 @@ class GoFishWs(WebSocketHandler):
         player = self.game.new_player(Player(
             name=data['user']['name'],
             ws=self,
+            uuid=self.current_user,
         ))
         self.player = player
         self.write_message(js.encode({
@@ -171,7 +199,7 @@ class GoFishWs(WebSocketHandler):
 
         Will cause a broadcast of `is_turn`
         """
-        other_player = self.game.get_player(data['from']['name'])
+        other_player = self.game.get_player(uuid.UUID(data['from']['uuid']))
         card = Card(**data['card'])
 
         try:

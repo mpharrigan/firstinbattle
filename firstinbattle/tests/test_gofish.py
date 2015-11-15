@@ -1,18 +1,19 @@
 import random
+import uuid
 from unittest import TestCase
 
 from tornado.testing import gen_test, AsyncHTTPTestCase
 from tornado.websocket import websocket_connect
 
 from firstinbattle.deck import Card
-from firstinbattle.gofish import Player, Pair, GoFish
+from firstinbattle.gofish import Player, Pair, GoFish, GoFishWs
 from firstinbattle.json_util import js
 from firstinbattle.main import FIBApplication
 
 
 class TestPlayer(TestCase):
     def test_consolidate_pairs1(self):
-        p1 = Player('p1')
+        p1 = Player('p1', uuid.uuid4())
         p1.cards = {
             Card(5, 'diamond'),
             Card(5, 'heart'),
@@ -31,7 +32,7 @@ class TestPlayer(TestCase):
         self.assertSetEqual(p1.pairs, new_pairs)
 
     def test_consolidate_pairs2(self):
-        p1 = Player('p1')
+        p1 = Player('p1', uuid.uuid4())
         p1.cards = {
             Card(5, 'diamond'),
             Card(5, 'heart'),
@@ -63,8 +64,8 @@ class TestGoFish(TestCase):
 
     def test_new_player(self):
         game = GoFish()
-        game.new_player(Player("p1"))
-        game.new_player(Player("p2"))
+        game.new_player(Player("p1", uuid.uuid4()))
+        game.new_player(Player("p2", uuid.uuid4()))
 
         self.assertEqual(len(game.players), 2)
         for p in game.players:
@@ -73,17 +74,17 @@ class TestGoFish(TestCase):
         self.assertEqual(len(game.dealer.cards), 52 - 7 - 7)
 
     def test_get_player(self):
-        # TODO: This should use a better guid
-        p1 = Player("p1")
+        p1_id = uuid.uuid4()
+        p1 = Player("p1", p1_id)
         game = GoFish()
         game.new_player(p1)
-        game.new_player(Player("p2"))
-        p1_got = game.get_player("p1")
+        game.new_player(Player("p2", uuid.uuid4()))
+        p1_got = game.get_player(p1_id)
         self.assertEqual(p1, p1_got)
 
     def test_is_turn(self):
-        p1 = Player("p1")
-        p2 = Player("p2")
+        p1 = Player("p1", uuid.uuid4())
+        p2 = Player("p2", uuid.uuid4())
         game = GoFish()
         game.new_player(p1)
         game.new_player(p2)
@@ -101,8 +102,8 @@ class TestGoFish(TestCase):
         self.assertFalse(game.is_turn(p2))
 
     def test_request1(self):
-        p1 = Player("p1")
-        p2 = Player("p2")
+        p1 = Player("p1", uuid.uuid4())
+        p2 = Player("p2", uuid.uuid4())
         game = GoFish()
         game.new_player(p1)
         game.new_player(p2)
@@ -121,8 +122,8 @@ class TestGoFish(TestCase):
         self.assertEqual(len(p1.cards), 7 + 1)
 
     def test_request2(self):
-        p1 = Player("p1")
-        p2 = Player("p2")
+        p1 = Player("p1", uuid.uuid4())
+        p2 = Player("p2", uuid.uuid4())
         game = GoFish()
         game.new_player(p1)
         game.new_player(p2)
@@ -145,6 +146,24 @@ class TestGoFish(TestCase):
 
 
 class TestGoFishWs(AsyncHTTPTestCase):
+    def setUp(self):
+        # Unfortunate mocking of auth
+        GoFishWs._test_pnum = 0
+
+        def get_test_curent_user(x):
+            GoFishWs._test_pnum += 1
+            return uuid.UUID(int=x._test_pnum)
+
+        GoFishWs.get_current_user = get_test_curent_user
+        super().setUp()
+
+    def connect_ws(self, i):
+        assert i > 0, "Use an integer id > 0"
+        ws = yield websocket_connect(
+            "ws://localhost:{}/gofish-ws".format(self.get_http_port()),
+            io_loop=self.io_loop)
+        ws.get_current_user = lambda x: uuid.UUID(int=i)
+
     def get_app(self):
         return FIBApplication()
 
@@ -233,7 +252,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         ws1.write_message(js.encode({
             'message': 'request_card',
             'card': desired_card,
-            'from': {'name': 'p2'}
+            'from': {'uuid': uuid.UUID(int=2)}
         }))
         cr1 = yield ws1.read_message()
         cr1 = js.loads(cr1)
@@ -292,7 +311,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         ws1.write_message(js.encode({
             'message': 'request_card',
             'card': desired_card,
-            'from': {'name': 'p2'}
+            'from': {'uuid': uuid.UUID(int=2)}
         }))
         cr1 = yield ws1.read_message()
         cr1 = js.loads(cr1)
@@ -352,7 +371,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         ws1.write_message(js.encode({
             'message': 'request_card',
             'card': {'number': 2, 'suit': 'diamond'},
-            'from': {'name': 'p2'},
+            'from': {'uuid': uuid.UUID(int=2)},
         }))
         rc1 = yield ws1.read_message()  # receive_card
         rc1 = js.loads(rc1)
@@ -390,7 +409,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         ws1.write_message(js.encode({
             'message': 'request_card',
             'card': {'number': 3, 'suit': 'diamond'},
-            'from': {'name': 'p2'},
+            'from': {'uuid': uuid.UUID(int=2)},
         }))
         rc1 = yield ws1.read_message()  # receive_card
         rc1 = js.loads(rc1)
@@ -441,7 +460,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         for i in range(52 - 7):
             ws1.write_message(js.encode({
                 'message': 'request_card',
-                'from': {'name': 'p1'},
+                'from': {'uuid': uuid.UUID(int=1)},
                 'card': {'suit': 'xxxx', 'number': 0},
             }))
             cr1 = yield ws1.read_message()  # receive_card
