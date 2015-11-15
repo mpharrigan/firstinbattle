@@ -7,13 +7,14 @@
 </form>
 
 <p>I am {{user.name}} and I have {{user.cards.length}} cards.</p>
-<label><input type="checkbox" disabled="disabled" ng-model="is_turn"> Is it my turn?</label>
+<label><input type="checkbox" disabled="disabled" ng-model="is_turn"> Is it my
+    turn?</label>
 
 <h2>Request Card</h2>
 <form novalidate class="simple-form">
     <label>From
         <select ng-model="req_from"
-                ng-options="player.name for player in players">
+                ng-options="player as player.name for player in players track by player.uuid">
         </select>
     </label><br/>
     <label>Card number
@@ -37,5 +38,5 @@
 
 <h2>Players</h2>
 <ul>
-    <li ng-repeat="player in players">{{player.name}}</li>
+    <li ng-repeat="player in players">{{player.name}} - {{player.uuid}}</li>
 </ul>

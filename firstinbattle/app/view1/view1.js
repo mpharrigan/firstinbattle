@@ -22,7 +22,7 @@ angular.module('fibApp.view1', ['ngRoute'])
             number: 11,
             suit: "heart"
         };
-        $scope.req_from = {name: ""};
+        $scope.req_from = {name: "", uuid: "0"};
         $scope.players = [];
         $scope.status = "Nothing happened yet";
         $scope.is_turn = false;

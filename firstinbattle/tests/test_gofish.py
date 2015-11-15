@@ -217,7 +217,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         self.assertEqual(r1, r2)
         self.assertEqual(len(r1['players']), 2)
         for plyr in r1['players']:
-            self.assertSetEqual(set(plyr.keys()), {'name'})
+            self.assertSetEqual(set(plyr.keys()), {'name', 'uuid'})
 
     @gen_test
     def test_steal_card(self):

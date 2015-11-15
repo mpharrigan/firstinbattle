@@ -191,7 +191,8 @@ class GoFishWs(WebSocketHandler):
         """
         self.write_message(js.encode({
             'message': 'return_players',
-            'players': [{'name': p.name} for p in self.game.players],
+            'players': [{'name': p.name, 'uuid': p.uuid}
+                        for p in self.game.players],
         }))
 
     def request_card(self, data):
