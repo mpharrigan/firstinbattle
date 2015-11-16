@@ -4,7 +4,7 @@ import uuid
 from collections import defaultdict
 
 from tornado.web import RequestHandler
-from tornado.websocket import WebSocketHandler
+from tornado.websocket import WebSocketHandler, WebSocketClosedError
 
 from .deck import StandardDeck, Card, NPair
 from .json_util import js
@@ -162,7 +162,25 @@ class GoFishWs(WebSocketHandler):
         self.game = game
 
         try:
-            self.game.get_player(self.current_user).ws = self
+            self.player = self.game.get_player(self.current_user)
+            log.debug("This player existed. Closing old websocket")
+            try:
+                self.player.ws.close()
+            except WebSocketClosedError:
+                log.debug("Websocket was already closed")
+            log.debug("Updating existing player to use this as the ws")
+            self.player.ws = self
+
+            log.debug("Alerting frontend that you already exist")
+            self.is_registered()
+            self.write_message(js.encode({
+                'message': 'player_registered',
+                'cards': self.player.cards,
+            }))
+            # Note: frontend is responsible for requesting relevant info
+            # self.get_players(None)
+            # self.is_turn(None)
+
             log.debug("Updated existing player to use this as the ws")
         except KeyError:
             log.debug("Doesn't look like this user had any ws before")
@@ -178,15 +196,19 @@ class GoFishWs(WebSocketHandler):
             uuid=self.current_user,
         ))
         self.player = player
-        self.write_message(js.encode({
-            'message': 'player_registered',
-            'cards': player.cards,
-        }))
+        self.is_registered()
 
         for player in self.game.players:
-            player.ws.get_players(None)
+            player.ws.get_players()
 
-    def get_players(self, data):
+    def is_registered(self, none=None):
+        self.write_message(js.encode({
+            'message': 'player_registered',
+            'user': {'name': self.player.name},
+            'cards': self.player.cards,
+        }))
+
+    def get_players(self, none=None):
         """Request unconfidential player data
         """
         self.write_message(js.encode({
@@ -222,7 +244,7 @@ class GoFishWs(WebSocketHandler):
 
             # Tell everyone their turn
             for player in self.game.players:
-                player.ws.is_turn(None)
+                player.ws.is_turn()
         except OutOfTurn:
             self.write_message(js.encode({
                 'message': 'not_your_turn',
@@ -241,7 +263,7 @@ class GoFishWs(WebSocketHandler):
             'cards': self.player.cards
         }))
 
-    def is_turn(self, data):
+    def is_turn(self, none=None):
         """Ask 'is it my turn?'
         """
         self.write_message(js.encode({
@@ -249,7 +271,7 @@ class GoFishWs(WebSocketHandler):
             'is_turn': self.game.is_turn(self.player)
         }))
 
-    def consolidate_pairs(self, data):
+    def consolidate_pairs(self, none=None):
         """Take hand and consolidate pairs
         """
         new_pairs = self.player.consolidate_pairs()

@@ -26,6 +26,7 @@ angular.module('fibApp.view1', ['ngRoute'])
         $scope.players = [];
         $scope.status = "Nothing happened yet";
         $scope.is_turn = false;
+        $scope.is_registered = false;
 
         var protocolPrefix = (window.location.protocol === 'https:') ? 'wss:' : 'ws:';
         var ws = new WebSocket(protocolPrefix + '//' + location.host + '/gofish-ws');
@@ -35,11 +36,17 @@ angular.module('fibApp.view1', ['ngRoute'])
             switch (data.message) {
                 case "player_registered":
                     $scope.$apply(function () {
+                        $scope.user.name = data.user.name;
                         $scope.user.cards = data.cards;
+                        $scope.status = "Player registered";
+                        $scope.is_registered = true;
                     });
                     console.log("User was registered " + data.cards);
                     ws.send(JSON.stringify({
                         message: 'is_turn'
+                    }));
+                    ws.send(JSON.stringify({
+                        message: 'get_players'
                     }));
                     break;
                 case "return_players":
@@ -93,5 +100,20 @@ angular.module('fibApp.view1', ['ngRoute'])
                     from: $scope.req_from
                 }
             ));
-        }
+        };
+
+        ws.onclose = function (evt) {
+            $scope.$apply(function () {
+                $scope.status = "Closed!";
+                $scope.user = {name: 'closed', cards: []};
+                $scope.is_registered = true;
+                $scope.req_card = {
+                    number: 11,
+                    suit: "heart"
+                };
+                $scope.req_from = {name: "", uuid: "0"};
+                $scope.players = [];
+                $scope.is_turn = false;
+            })
+        };
     }]);

@@ -2,8 +2,8 @@
 
 <h2>User info</h2>
 <form novalidate class="simple-form">
-    <input type="text" ng-model="user.name"/><br/>
-    <input type="submit" ng-click="new_game(user)" value="New/Join Game"/>
+    <input type="text" ng-model="user.name" ng-disabled="is_registered"/><br/>
+    <input type="submit" ng-click="new_game(user)" value="New/Join Game" ng-disabled="is_registered"/>
 </form>
 
 <p>I am {{user.name}} and I have {{user.cards.length}} cards.</p>

@@ -186,6 +186,7 @@ class TestGoFishWs(AsyncHTTPTestCase):
         for card in data['cards']:
             self.assertSetEqual(set(card.keys()), {'number', 'suit'})
             self.assertTrue(0 <= card['number'] < 13)
+        self.assertEqual(data['user']['name'], 'p1')
 
     @gen_test
     def test_register_multi_player(self):
