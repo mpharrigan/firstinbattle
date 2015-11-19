@@ -65,7 +65,7 @@ class Player:
     def json(self):
         return {
             'name': self.name,
-            'cards': self.cards,
+            'uuid': self.uuid,
         }
 
 
@@ -95,6 +95,9 @@ class GoFish:
 
     def is_turn(self, player):
         return player == self.players[self._turn]
+
+    def whose_turn(self):
+        return self.players[self._turn]
 
     def next_turn(self):
         self._turn += 1
@@ -173,10 +176,6 @@ class GoFishWs(WebSocketHandler):
 
             log.debug("Alerting frontend that you already exist")
             self.is_registered()
-            self.write_message(js.encode({
-                'message': 'player_registered',
-                'cards': self.player.cards,
-            }))
             # Note: frontend is responsible for requesting relevant info
             # self.get_players(None)
             # self.is_turn(None)
@@ -204,7 +203,7 @@ class GoFishWs(WebSocketHandler):
     def is_registered(self, none=None):
         self.write_message(js.encode({
             'message': 'player_registered',
-            'user': {'name': self.player.name},
+            'user': self.player,
             'cards': self.player.cards,
         }))
 
@@ -213,8 +212,7 @@ class GoFishWs(WebSocketHandler):
         """
         self.write_message(js.encode({
             'message': 'return_players',
-            'players': [{'name': p.name, 'uuid': p.uuid}
-                        for p in self.game.players],
+            'players': self.game.players,
         }))
 
     def request_card(self, data):
@@ -268,7 +266,8 @@ class GoFishWs(WebSocketHandler):
         """
         self.write_message(js.encode({
             'message': 'is_turn',
-            'is_turn': self.game.is_turn(self.player)
+            'is_turn': self.game.is_turn(self.player),
+            'whose_turn': self.game.whose_turn(),
         }))
 
     def consolidate_pairs(self, none=None):

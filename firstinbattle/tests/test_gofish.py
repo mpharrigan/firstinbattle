@@ -91,15 +91,19 @@ class TestGoFish(TestCase):
 
         self.assertTrue(game.is_turn(p1))
         self.assertFalse(game.is_turn(p2))
+        self.assertEqual(game.whose_turn(), p1)
 
         game.next_turn()
 
         self.assertFalse(game.is_turn(p1))
         self.assertTrue(game.is_turn(p2))
+        self.assertEqual(game.whose_turn(), p2)
 
         game.next_turn()
+
         self.assertTrue(game.is_turn(p1))
         self.assertFalse(game.is_turn(p2))
+        self.assertEqual(game.whose_turn(), p1)
 
     def test_request1(self):
         p1 = Player("p1", uuid.uuid4())
@@ -387,6 +391,9 @@ class TestGoFishWs(AsyncHTTPTestCase):
         self.assertEqual(it2['message'], 'is_turn')  # TODO: could be lose card
         self.assertFalse(it1['is_turn'])
         self.assertTrue(it2['is_turn'])
+        self.assertEqual(it1['whose_turn'], it2['whose_turn'])
+        self.assertEqual(it1['whose_turn']['name'], 'p2')
+        self.assertEqual(it1['whose_turn']['uuid'], uuid.UUID(int=2).hex)
 
         # Should not be p1's turn
         ws1.write_message(js.encode({
