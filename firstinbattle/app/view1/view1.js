@@ -17,7 +17,7 @@ angular.module('fibApp.view1', ['ngRoute'])
                 numbers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
             }
         };
-        $scope.user = {name: 'player name', cards: []};
+        $scope.user = {name: 'player name', cards: [], pairs: []};
         $scope.req_card = {
             number: 11,
             suit: "heart"
@@ -41,7 +41,6 @@ angular.module('fibApp.view1', ['ngRoute'])
                         $scope.status = "Player registered";
                         $scope.is_registered = true;
                     });
-                    console.log("User was registered " + data.cards);
                     ws.send(JSON.stringify({
                         message: 'is_turn'
                     }));
@@ -63,6 +62,9 @@ angular.module('fibApp.view1', ['ngRoute'])
                             $scope.status = "Go fish!";
                         }
                     });
+                    ws.send(JSON.stringify({
+                        message: 'consolidate_pairs'
+                    }));
                     break;
                 case "card_lost":
                     $scope.$apply(function () {
@@ -78,6 +80,12 @@ angular.module('fibApp.view1', ['ngRoute'])
                 case "is_turn":
                     $scope.$apply(function () {
                         $scope.is_turn = data.is_turn;
+                    });
+                    break;
+                case "pairs_consolidated":
+                    $scope.$apply(function () {
+                        $scope.user.cards = data.cards;
+                        $scope.user.pairs = data.all_pairs;
                     });
                     break;
                 default:
